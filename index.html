@@ -211,7 +211,7 @@ async function run() {
   resultsEl.innerHTML = "";
   try {
     const all = dedupe(await fetchBooks(years));
-    const books = all.slice(0, 12);
+    const books = all.slice(0, 20);
     if (!books.length) {
       statusEl.textContent = `${years}歳の名作データが見つかりませんでした（年齢を変えて試してみてください）`;
       return;
