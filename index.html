@@ -151,6 +151,10 @@ async function fetchBooks(age) {
       BIND(YEAR(?birthDate) AS ?birthYear)
       FILTER(?pubYear - ?birthYear = ${age})
       FILTER(?sitelinks >= 12)
+      # マンガ・ライトノベルを除外
+      FILTER NOT EXISTS { ?work wdt:P31/wdt:P279* wd:Q8274 }
+      FILTER NOT EXISTS { ?work wdt:P31/wdt:P279* wd:Q1233720 }
+      FILTER NOT EXISTS { ?work wdt:P31/wdt:P279* wd:Q21198342 }
       OPTIONAL {
         ?article schema:about ?work ;
                  schema:isPartOf <https://ja.wikipedia.org/> ;
