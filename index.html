@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>同い年の名作 — あなたの歳、天才は何を書いたか</title>
+<style>
+  :root {
+    --bg: #faf7f2;
+    --card: #ffffff;
+    --ink: #2b2622;
+    --sub: #8a8178;
+    --accent: #b3541e;
+    --line: #ece5da;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { text-align: center; margin-bottom: 40px; }
+  h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: 0.04em; }
+  .lead { color: var(--sub); font-size: 15px; margin: 0; }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  label { display: block; font-size: 14px; color: var(--sub); margin-bottom: 10px; }
+  input[type="date"] {
+    font-size: 17px; padding: 10px 14px;
+    border: 1px solid var(--line); border-radius: 10px;
+    font-family: inherit; background: #fff;
+  }
+  button {
+    display: inline-block; margin-left: 8px;
+    font-size: 16px; padding: 11px 22px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 10px; cursor: pointer;
+    font-family: inherit;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .age-line { margin-top: 18px; font-size: 18px; }
+  .age-line b { color: var(--accent); font-size: 22px; }
+  .quotebox {
+    background: #fbf3e9;
+    border: 1px solid #ecdcc6;
+    border-left: 4px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: 28px;
+  }
+  .quotebox .qtext { font-size: 18px; margin: 0 0 10px; line-height: 1.8; }
+  .quotebox .qby { font-size: 14px; color: var(--ink); margin: 0; }
+  .quotebox .qby b { color: var(--accent); }
+  .quotebox .qmean { font-size: 14px; color: var(--ink); opacity: 0.85; margin: 8px 0 0; line-height: 1.7; }
+  .quotebox .qsrc { font-size: 12px; color: var(--sub); margin: 4px 0 0; }
+  .status { text-align: center; color: var(--sub); margin: 24px 0; }
+  .book {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+  .book .title { font-size: 19px; margin: 0 0 4px; }
+  .book .pubyear { font-size: 14px; color: var(--sub); font-weight: normal; margin-left: 6px; }
+  .book .meta { font-size: 14px; color: var(--sub); margin: 0; }
+  .book .summary { font-size: 14.5px; color: var(--ink); margin: 10px 0 12px; opacity: 0.85; }
+  .book a { color: var(--accent); text-decoration: none; font-size: 14px; }
+  .note { text-align: center; font-size: 12px; color: var(--sub); margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>同い年の名作</h1>
+    <p class="lead">あなたと同じ歳のとき、天才たちは何を書いていたか。</p>
+  </header>
+
+  <div class="panel">
+    <label for="birth">生年月日を入れてください</label>
+    <input type="date" id="birth" value="1986-01-01">
+    <button id="go">見る</button>
+    <div class="age-line" id="ageLine"></div>
+  </div>
+
+  <div id="quote"></div>
+  <div id="status" class="status"></div>
+  <div id="results"></div>
+
+  <p class="note">データ出典: Wikidata（無料の公開データベース）／ 出版年と作者の生年から年齢を計算しています（出版＝執筆ではないため多少の誤差あり）。</p>
+</div>
+
+<script src="quotes.js"></script>
+<script>
+const birthEl  = document.getElementById('birth');
+const goEl     = document.getElementById('go');
+const ageLine  = document.getElementById('ageLine');
+const quoteEl  = document.getElementById('quote');
+const statusEl = document.getElementById('status');
+const resultsEl= document.getElementById('results');
+
+function showQuote(years) {
+  if (typeof QUOTES === "undefined" || !QUOTES.length) { quoteEl.innerHTML = ""; return; }
+  let best = QUOTES[0];
+  for (const q of QUOTES) {
+    if (Math.abs(q.age - years) < Math.abs(best.age - years)) best = q;
+  }
+  quoteEl.innerHTML = `
+    <div class="quotebox">
+      <p class="qtext">「${best.quote}」</p>
+      <p class="qby">— ${best.person}が<b>${best.age}歳</b>のとき</p>
+      ${best.meaning ? `<p class="qmean">${best.meaning}</p>` : ""}
+      <p class="qsrc">${best.source}</p>
+    </div>`;
+}
+
+function calcAge(birthStr) {
+  const b = new Date(birthStr);
+  const now = new Date();
+  let years = now.getFullYear() - b.getFullYear();
+  let months = now.getMonth() - b.getMonth();
+  if (now.getDate() < b.getDate()) months--;
+  if (months < 0) { years--; months += 12; }
+  return { years, months };
+}
+
+async function fetchBooks(age) {
+  const query = `
+    SELECT ?workLabel ?authorLabel ?pubYear ?birthYear ?sitelinks ?jaArticle WHERE {
+      ?work wdt:P50 ?author .
+      ?work wdt:P577 ?pubDate .
+      ?work wdt:P31/wdt:P279* wd:Q7725634 .
+      ?work wikibase:sitelinks ?sitelinks .
+      ?author wdt:P569 ?birthDate .
+      BIND(YEAR(?pubDate) AS ?pubYear)
+      BIND(YEAR(?birthDate) AS ?birthYear)
+      FILTER(?pubYear - ?birthYear = ${age})
+      FILTER(?sitelinks >= 12)
+      OPTIONAL {
+        ?article schema:about ?work ;
+                 schema:isPartOf <https://ja.wikipedia.org/> ;
+                 schema:name ?jaArticle .
+      }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "ja,en". }
+    } ORDER BY DESC(?sitelinks) LIMIT 40`;
+  const url = "https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(query);
+  const res = await fetch(url, { headers: { "Accept": "application/sparql-results+json" } });
+  if (!res.ok) throw new Error("通信に失敗しました (" + res.status + ")");
+  const data = await res.json();
+  return data.results.bindings.map(b => ({
+    title: b.workLabel?.value || "（無題）",
+    author: b.authorLabel?.value || "（作者不明）",
+    year: b.pubYear?.value || "",
+    birthYear: b.birthYear?.value || "",
+    article: b.jaArticle?.value || "",
+    fame: parseInt(b.sitelinks?.value || "0", 10)
+  }));
+}
+
+async function fetchSummary(article) {
+  if (!article) return "";
+  try {
+    const url = "https://ja.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(article);
+    const res = await fetch(url);
+    if (!res.ok) return "";
+    const data = await res.json();
+    return data.extract || "";
+  } catch (e) {
+    return "";
+  }
+}
+
+function dedupe(books) {
+  const seen = new Set();
+  const out = [];
+  for (const bk of books) {
+    const key = bk.title + "|" + bk.author;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(bk);
+  }
+  return out;
+}
+
+async function run() {
+  if (!birthEl.value) { ageLine.textContent = "生年月日を入れてください"; return; }
+  const { years, months } = calcAge(birthEl.value);
+  ageLine.innerHTML = `あなたは今 <b>${years}歳${months}か月</b>`;
+  showQuote(years);
+  goEl.disabled = true;
+  statusEl.textContent = "天才たちの足跡を探しています…";
+  resultsEl.innerHTML = "";
+  try {
+    const all = dedupe(await fetchBooks(years));
+    const books = all.slice(0, 12);
+    if (!books.length) {
+      statusEl.textContent = `${years}歳の名作データが見つかりませんでした（年齢を変えて試してみてください）`;
+      return;
+    }
+    statusEl.textContent = `${years}歳のときに書かれた名作 ${books.length}冊（あらすじを読み込み中…）`;
+    await Promise.all(books.map(async bk => { bk.summary = await fetchSummary(bk.article); }));
+    statusEl.textContent = `${years}歳のときに書かれた名作 ${books.length}冊`;
+    resultsEl.innerHTML = books.map(bk => `
+      <div class="book">
+        <p class="title">${bk.title}${bk.year ? `<span class="pubyear">（${bk.year}年）</span>` : ""}</p>
+        <p class="meta">${bk.author}${bk.birthYear ? `（${bk.birthYear}年生まれ）` : ""}</p>
+        ${bk.summary ? `<p class="summary">${bk.summary}</p>` : ""}
+        <a href="https://www.amazon.co.jp/s?k=${encodeURIComponent(bk.title)}" target="_blank" rel="noopener">この本を探す →</a>
+      </div>`).join("");
+  } catch (e) {
+    statusEl.textContent = "エラー: " + e.message;
+  } finally {
+    goEl.disabled = false;
+  }
+}
+
+goEl.addEventListener('click', run);
+</script>
+</body>
+</html>
