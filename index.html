@@ -119,6 +119,7 @@
   .book .meta { font-size: 14px; color: var(--sub); margin: 0; }
   .book .summary { font-size: 14.5px; color: var(--ink); margin: 10px 0 12px; opacity: 0.85; }
   .book a { color: var(--accent); text-decoration: none; font-size: 14px; }
+  .book a + a { margin-left: 16px; }
   .about { margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--line); }
   .about h2 { font-size: 19px; margin: 0 0 14px; letter-spacing: 0.03em; }
   .about p { font-size: 14.5px; color: var(--ink); opacity: 0.9; margin: 0 0 14px; }
@@ -210,7 +211,9 @@ const I18N = {
     found: (y, n) => `${y}歳のときに書かれた名作 ${n}冊`,
     pubYear: (y) => `（${y}年）`,
     born: (y) => `（${y}年生まれ）`,
-    findBook: "この本を探す →",
+    findBook: "Amazonで探す →",
+    findRakuten: "楽天で探す →",
+    rakuten: (title) => "https://hb.afl.rakuten.co.jp/hgc/54e75d2b.73e6dcff.54e75d2c.0ad67fd2/?pc=" + encodeURIComponent("https://search.rakuten.co.jp/search/mall/?sitem=" + title) + "&link_type=hybrid_url&ut=eyJwYWdlIjoidXJsIiwidHlwZSI6Imh5YnJpZF91cmwiLCJjb2wiOjF9",
     err: (m) => "エラー: " + m,
     comingSoon: "（このページは日本語版です）",
     quoteBy: (person, age) => `— ${person}が<b>${age}歳</b>のとき`,
@@ -431,7 +434,7 @@ async function run() {
         <p class="title">${bk.title}${bk.year ? `<span class="pubyear">${T.pubYear(bk.year)}</span>` : ""}</p>
         <p class="meta">${bk.author}${bk.birthYear ? T.born(bk.birthYear) : ""}</p>
         ${bk.summary ? `<p class="summary">${bk.summary}</p>` : ""}
-        <a href="${T.amazon}${encodeURIComponent(bk.title)}" target="_blank" rel="noopener">${T.findBook}</a>
+        <a href="${T.amazon}${encodeURIComponent(bk.title)}" target="_blank" rel="noopener">${T.findBook}</a>${T.rakuten ? ` <a href="${T.rakuten(bk.title)}" target="_blank" rel="noopener">${T.findRakuten}</a>` : ""}
       </div>`).join("");
   } catch (e) {
     statusEl.textContent = T.err(e.message);
