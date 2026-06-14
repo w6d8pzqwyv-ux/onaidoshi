@@ -5,6 +5,7 @@
 #   powershell -ExecutionPolicy Bypass -File generate-books.ps1            (Japanese, default)
 #   powershell -ExecutionPolicy Bypass -File generate-books.ps1 -Lang en   (English)
 #   powershell -ExecutionPolicy Bypass -File generate-books.ps1 -Lang es   (Spanish)
+#   powershell -ExecutionPolicy Bypass -File generate-books.ps1 -Lang pt   (Portuguese)
 
 param([string]$Lang = "ja")
 
@@ -13,9 +14,9 @@ $UA = "onaidoshi/1.0 (https://w6d8pzqwyv-ux.github.io/onaidoshi/)"
 
 # language-dependent settings
 $wikiLang  = $Lang                                              # ja / en / es -> ja/en/es.wikipedia
-$labelLang = if ($Lang -eq "en") { "en" } elseif ($Lang -eq "es") { "es,en" } else { "ja,en" }
-$varName   = if ($Lang -eq "en") { "BOOKS_DATA_EN" } elseif ($Lang -eq "es") { "BOOKS_DATA_ES" } else { "BOOKS_DATA" }
-$OUT       = if ($Lang -eq "en") { "$PSScriptRoot\books-data-en.js" } elseif ($Lang -eq "es") { "$PSScriptRoot\books-data-es.js" } else { "$PSScriptRoot\books-data.js" }
+$labelLang = if ($Lang -eq "en") { "en" } elseif ($Lang -eq "es") { "es,en" } elseif ($Lang -eq "pt") { "pt,en" } else { "ja,en" }
+$varName   = if ($Lang -eq "en") { "BOOKS_DATA_EN" } elseif ($Lang -eq "es") { "BOOKS_DATA_ES" } elseif ($Lang -eq "pt") { "BOOKS_DATA_PT" } else { "BOOKS_DATA" }
+$OUT       = if ($Lang -eq "en") { "$PSScriptRoot\books-data-en.js" } elseif ($Lang -eq "es") { "$PSScriptRoot\books-data-es.js" } elseif ($Lang -eq "pt") { "$PSScriptRoot\books-data-pt.js" } else { "$PSScriptRoot\books-data.js" }
 
 function Invoke-WDQS($query, $timeout) {
   $url = "https://query.wikidata.org/sparql?format=json&query=" + [uri]::EscapeDataString($query)
