@@ -311,12 +311,18 @@ async function run() {
   if (!raw.length) { statusEl.textContent = T.none(years); goEl.disabled = false; return; }
 
   const books = raw.map(b => ({ title: b.t, author: b.a, year: b.y, birthYear: b.by, article: b.art }));
-  statusEl.textContent = T.loading(years, books.length);
+  // 毎回違う本が出るようにシャッフル（フィッシャー–イェーツ法）してから最大8冊を表示
+  for (let i = books.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [books[i], books[j]] = [books[j], books[i]];
+  }
+  const shown = books.slice(0, 8);
+  statusEl.textContent = T.loading(years, shown.length);
   try {
     // あらすじだけはWikipediaからその場で取得（1冊1リクエストで軽い）
-    await Promise.all(books.map(async bk => { bk.summary = await fetchSummary(bk.article); }));
-    statusEl.textContent = T.found(years, books.length);
-    resultsEl.innerHTML = books.map(bk => `
+    await Promise.all(shown.map(async bk => { bk.summary = await fetchSummary(bk.article); }));
+    statusEl.textContent = T.found(years, shown.length);
+    resultsEl.innerHTML = shown.map(bk => `
       <div class="book">
         <p class="title">${bk.title}${bk.year ? `<span class="pubyear">${T.pubYear(bk.year)}</span>` : ""}</p>
         <p class="meta">${bk.author}${bk.birthYear ? T.born(bk.birthYear) : ""}</p>
