@@ -1,10 +1,20 @@
-# onaidoshi - pre-generate book data (v3: range-split bulk fetch)
+# onaidoshi - pre-generate book data (v3: range-split bulk fetch, multi-language)
 # Fetch famous literary works split by fame ranges (small batches = stable),
-# group by age locally, keep literary types only. Save to books-data.js.
-# Usage: powershell -ExecutionPolicy Bypass -File generate-books.ps1
+# group by age locally, keep literary types only. Save to books-data.js / books-data-en.js.
+# Usage:
+#   powershell -ExecutionPolicy Bypass -File generate-books.ps1            (Japanese, default)
+#   powershell -ExecutionPolicy Bypass -File generate-books.ps1 -Lang en   (English)
+
+param([string]$Lang = "ja")
 
 $ErrorActionPreference = "Stop"
 $UA = "onaidoshi/1.0 (https://w6d8pzqwyv-ux.github.io/onaidoshi/)"
+
+# language-dependent settings
+$wikiLang  = $Lang                                              # ja / en  -> ja.wikipedia / en.wikipedia
+$labelLang = if ($Lang -eq "en") { "en" } else { "ja,en" }     # SERVICE label language
+$varName   = if ($Lang -eq "en") { "BOOKS_DATA_EN" } else { "BOOKS_DATA" }
+$OUT       = if ($Lang -eq "en") { "$PSScriptRoot\books-data-en.js" } else { "$PSScriptRoot\books-data.js" }
 
 function Invoke-WDQS($query, $timeout) {
   $url = "https://query.wikidata.org/sparql?format=json&query=" + [uri]::EscapeDataString($query)
@@ -31,16 +41,14 @@ $allow = @{}
 $deny = @{}
 "Q8274","Q7889","Q1004","Q838795","Q1760610","Q1107","Q21198342","Q1233720","Q11424","Q13442814","Q49757","Q1153574","Q725377","Q2831984","Q3297186","Q1004280" | ForEach-Object { $deny[$_] = $true }
 # exclude specific works by QID (hate/propaganda - never list with a buy link)
-# Mein Kampf (all editions), Protocols of the Elders of Zion, Quotations from Chairman Mao / Little Red Book
 $excludeQid = @{}
 "Q48244","Q1323886","Q1669919","Q1678947","Q17124728","Q125020971","Q139876069","Q26193","Q36393","Q105095422","Q123244145","Q486292","Q4366335","Q126687624","Q126687634" | ForEach-Object { $excludeQid[$_] = $true }
 
 $AGE_MIN = 15
 $AGE_MAX = 75
 $PER_AGE = 40
-$OUT = "$PSScriptRoot\books-data.js"
 
-# fame ranges down to 15. Lower ranges are split finely to keep each batch small.
+# fame ranges down to 20. Lower ranges are split finely to keep each batch small.
 $ranges = @(
   @(250, 100000),
   @(150, 250),
@@ -58,6 +66,16 @@ $ranges = @(
   @(20, 24)
 )
 
+$result = [ordered]@{}
+
+function Save-Data {
+  $json = $result | ConvertTo-Json -Depth 6 -Compress
+  $text = "window.$varName = $json;`r`n"
+  Set-Content -Path $OUT -Value $text -Encoding UTF8
+}
+
+Write-Output "Generating for language: $Lang (wiki=$wikiLang, out=$OUT)"
+
 # ---- stage 1: candidates per fame range (age computed & filtered server-side) ----
 $cand = @{}   # qid -> @{ title; author; sl; py; by; age }
 foreach ($rg in $ranges) {
@@ -73,7 +91,7 @@ SELECT ?work ?workLabel ?authorLabel ?pubYear ?birthYear ?age ?sitelinks WHERE {
   BIND(YEAR(?birthDate) AS ?birthYear)
   BIND(?pubYear - ?birthYear AS ?age)
   FILTER(?age >= $AGE_MIN && ?age <= $AGE_MAX)
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "ja,en". }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "$labelLang". }
 } LIMIT 2000
 "@
   $r = Get-WDQS $q
@@ -90,7 +108,6 @@ SELECT ?work ?workLabel ?authorLabel ?pubYear ?birthYear ?age ?sitelinks WHERE {
     if (-not $cand.Contains($qid)) {
       $cand[$qid] = @{ title=$title; author=$b.authorLabel.value; sl=[int]$b.sitelinks.value; py=$py; by=$by; age=$age }
     } elseif ($py -lt $cand[$qid].py) {
-      # keep earliest publication (closest to writing)
       $cand[$qid].py = $py; $cand[$qid].age = $age
     }
     $n++
@@ -100,17 +117,17 @@ SELECT ?work ?workLabel ?authorLabel ?pubYear ?birthYear ?age ?sitelinks WHERE {
 }
 Write-Output "STAGE1 DONE. candidates: $($cand.Count)"
 
-# ---- stage 2: types + ja article (batches of 120) ----
+# ---- stage 2: types + wikipedia article (batches of 120) ----
 $types = @{}; $articles = @{}
 $ids = @($cand.Keys)
 for ($i = 0; $i -lt $ids.Count; $i += 120) {
   $batch = $ids[$i..([Math]::Min($i+119, $ids.Count-1))]
   $values = ($batch | ForEach-Object { "wd:$_" }) -join " "
   $q2 = @"
-SELECT ?work ?type ?jaArticle WHERE {
+SELECT ?work ?type ?article WHERE {
   VALUES ?work { $values }
   ?work wdt:P31 ?type .
-  OPTIONAL { ?a schema:about ?work ; schema:isPartOf <https://ja.wikipedia.org/> ; schema:name ?jaArticle . }
+  OPTIONAL { ?a schema:about ?work ; schema:isPartOf <https://$wikiLang.wikipedia.org/> ; schema:name ?article . }
 }
 "@
   $r2 = Get-WDQS $q2
@@ -120,7 +137,7 @@ SELECT ?work ?type ?jaArticle WHERE {
     $t = Qid $b.type.value
     if (-not $types.Contains($qid)) { $types[$qid] = @{} }
     $types[$qid][$t] = $true
-    if ($b.jaArticle -and -not $articles.Contains($qid)) { $articles[$qid] = $b.jaArticle.value }
+    if ($b.article -and -not $articles.Contains($qid)) { $articles[$qid] = $b.article.value }
   }
   Write-Output "type batch $i done"
   Start-Sleep -Seconds 1
@@ -161,8 +178,8 @@ for ($age = $AGE_MIN; $age -le $AGE_MAX; $age++) {
 }
 
 $json = $result | ConvertTo-Json -Depth 6 -Compress
-$text = "window.BOOKS_DATA = $json;`r`n"
+$text = "window.$varName = $json;`r`n"
 Set-Content -Path $OUT -Value $text -Encoding UTF8
 
 $withData = 0; foreach ($k in $result.Keys) { if ($result[$k].Count -gt 0) { $withData++ } }
-Write-Output "DONE. ages with data: $withData / $($result.Count). saved to books-data.js"
+Write-Output "DONE. lang=$Lang ages with data: $withData / $($result.Count). saved to $OUT"
