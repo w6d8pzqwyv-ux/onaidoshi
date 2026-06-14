@@ -184,7 +184,7 @@ const T = {
   shareX: "Partager sur X",
   shareCopy: "Copier",
   copied: "Copié ✓",
-  amazon: "https://www.amazon.com/s?k="
+  amazon: "https://www.amazon.fr/s?k="
 };
 
 function calcAge(birthStr) {
@@ -248,7 +248,7 @@ async function run() {
         <p class="title">${bk.title}${bk.year ? `<span class="pubyear">${T.pubYear(bk.year)}</span>` : ""}</p>
         <p class="meta">${bk.author}${bk.birthYear ? T.born(bk.birthYear) : ""}</p>
         ${bk.summary ? `<p class="summary">${bk.summary}</p>` : ""}
-        <a href="${T.amazon}${encodeURIComponent(bk.title)}&tag=onaidoshi20-20" target="_blank" rel="noopener">${T.findBook}</a>
+        <a href="${T.amazon}${encodeURIComponent(bk.title)}&tag=onaidoshi-21" target="_blank" rel="noopener">${T.findBook}</a>
       </div>`).join("");
   } catch (e) {
     statusEl.textContent = T.err(e.message);
