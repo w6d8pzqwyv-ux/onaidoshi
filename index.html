@@ -378,7 +378,6 @@ async function run() {
   // 「自分ごと化」：主役の1冊で大きな導入文を出す（主役はユーザー）
   const hero = shown[0];
   introEl.innerHTML = `
-    <p class="intro-age">あなたは今 <b>${years}</b> 歳。</p>
     <p class="intro-main"><span class="ia">${hero.author}</span> は ${years}歳のとき<br>『<span class="it">${hero.title}</span>』<br>を書きました。</p>`;
 
   // SNSシェア（X・LINE・コピー）
