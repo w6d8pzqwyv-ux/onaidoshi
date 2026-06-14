@@ -27,27 +27,35 @@ function Qid($uri) { return ($uri -split "/")[-1] }
 # literary types to keep
 $allow = @{}
 "Q8261","Q149537","Q49084","Q7725634","Q47461344","Q5185279","Q25379","Q179959","Q699","Q35760","Q4184","Q1318295","Q1372064","Q12106333","Q7727","Q34620","Q25372","Q5292","Q1209283" | ForEach-Object { $allow[$_] = $true }
-# types to exclude (manga, game, comic, anime, document, scientific article)
+# types to exclude (manga, game, comic, graphic novel, anime, document, scientific article)
 $deny = @{}
-"Q8274","Q7889","Q1004","Q838795","Q1760610","Q1107","Q21198342","Q1233720","Q11424","Q13442814","Q49757","Q1153574" | ForEach-Object { $deny[$_] = $true }
+"Q8274","Q7889","Q1004","Q838795","Q1760610","Q1107","Q21198342","Q1233720","Q11424","Q13442814","Q49757","Q1153574","Q725377","Q2831984","Q3297186","Q1004280" | ForEach-Object { $deny[$_] = $true }
 # exclude specific works by QID (hate/propaganda - never list with a buy link)
 # Mein Kampf (all editions), Protocols of the Elders of Zion, Quotations from Chairman Mao / Little Red Book
 $excludeQid = @{}
-"Q48244","Q1323886","Q1669919","Q1678947","Q17124728","Q125020971","Q139876069","Q26193","Q36393","Q105095422","Q123244145" | ForEach-Object { $excludeQid[$_] = $true }
+"Q48244","Q1323886","Q1669919","Q1678947","Q17124728","Q125020971","Q139876069","Q26193","Q36393","Q105095422","Q123244145","Q486292","Q4366335","Q126687624","Q126687634" | ForEach-Object { $excludeQid[$_] = $true }
 
 $AGE_MIN = 15
 $AGE_MAX = 75
-$PER_AGE = 12
+$PER_AGE = 40
 $OUT = "$PSScriptRoot\books-data.js"
 
+# fame ranges down to 15. Lower ranges are split finely to keep each batch small.
 $ranges = @(
   @(250, 100000),
   @(150, 250),
   @(110, 150),
-  @(85, 110),
-  @(68, 85),
-  @(55, 68),
-  @(45, 55)
+  @(90, 110),
+  @(75, 90),
+  @(63, 75),
+  @(54, 63),
+  @(47, 54),
+  @(41, 47),
+  @(36, 41),
+  @(31, 36),
+  @(27, 31),
+  @(24, 27),
+  @(20, 24)
 )
 
 # ---- stage 1: candidates per fame range (age computed & filtered server-side) ----

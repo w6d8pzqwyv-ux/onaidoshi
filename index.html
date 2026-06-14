@@ -210,10 +210,10 @@ function showQuote(years) {
   // 名言は今のところ日本語版のみ。他言語では表示しない（将来 言語別の名言を追加予定）
   if (LANG !== "ja") { quoteEl.innerHTML = ""; return; }
   if (typeof QUOTES === "undefined" || !QUOTES.length) { quoteEl.innerHTML = ""; return; }
-  let best = QUOTES[0];
-  for (const q of QUOTES) {
-    if (Math.abs(q.age - years) < Math.abs(best.age - years)) best = q;
-  }
+  // 年齢が近い順に並べ、近い候補5件からランダムに1つ選ぶ（毎回変わる）
+  const sorted = [...QUOTES].sort((a, b) => Math.abs(a.age - years) - Math.abs(b.age - years));
+  const pool = sorted.slice(0, 5);
+  const best = pool[Math.floor(Math.random() * pool.length)];
   quoteEl.innerHTML = `
     <div class="quotebox">
       <p class="qtext">「${best.quote}」</p>
