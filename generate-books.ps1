@@ -1,0 +1,155 @@
+# onaidoshi - pre-generate book data (v3: range-split bulk fetch)
+# Fetch famous literary works split by fame ranges (small batches = stable),
+# group by age locally, keep literary types only. Save to books-data.js.
+# Usage: powershell -ExecutionPolicy Bypass -File generate-books.ps1
+
+$ErrorActionPreference = "Stop"
+$UA = "onaidoshi/1.0 (https://w6d8pzqwyv-ux.github.io/onaidoshi/)"
+
+function Invoke-WDQS($query, $timeout) {
+  $url = "https://query.wikidata.org/sparql?format=json&query=" + [uri]::EscapeDataString($query)
+  try {
+    $r = Invoke-WebRequest -Uri $url -Headers @{ "Accept"="application/sparql-results+json"; "User-Agent"=$UA } -UseBasicParsing -TimeoutSec $timeout
+    $text = [System.Text.Encoding]::UTF8.GetString($r.Content)
+    return @{ ok=$true; data=($text | ConvertFrom-Json) }
+  } catch { return @{ ok=$false; err=$_.Exception.Message } }
+}
+function Get-WDQS($query) {
+  for ($i = 1; $i -le 4; $i++) {
+    $r = Invoke-WDQS $query 80
+    if ($r.ok) { return $r }
+    Start-Sleep -Seconds ($i * 5)
+  }
+  return $r
+}
+function Qid($uri) { return ($uri -split "/")[-1] }
+
+# literary types to keep
+$allow = @{}
+"Q8261","Q149537","Q49084","Q7725634","Q47461344","Q5185279","Q25379","Q179959","Q699","Q35760","Q4184","Q1318295","Q1372064","Q12106333","Q7727","Q34620","Q25372","Q5292","Q1209283" | ForEach-Object { $allow[$_] = $true }
+# types to exclude (manga, game, comic, anime, document, scientific article)
+$deny = @{}
+"Q8274","Q7889","Q1004","Q838795","Q1760610","Q1107","Q21198342","Q1233720","Q11424","Q13442814","Q49757","Q1153574" | ForEach-Object { $deny[$_] = $true }
+
+$AGE_MIN = 15
+$AGE_MAX = 75
+$PER_AGE = 12
+$OUT = "$PSScriptRoot\books-data.js"
+
+$ranges = @(
+  @(250, 100000),
+  @(150, 250),
+  @(110, 150),
+  @(85, 110),
+  @(68, 85),
+  @(55, 68),
+  @(45, 55)
+)
+
+# ---- stage 1: candidates per fame range (age computed & filtered server-side) ----
+$cand = @{}   # qid -> @{ title; author; sl; py; by; age }
+foreach ($rg in $ranges) {
+  $lo = $rg[0]; $hi = $rg[1]
+  $q = @"
+SELECT ?work ?workLabel ?authorLabel ?pubYear ?birthYear ?age ?sitelinks WHERE {
+  ?work wdt:P50 ?author ;
+        wdt:P577 ?pubDate ;
+        wikibase:sitelinks ?sitelinks .
+  ?author wdt:P569 ?birthDate .
+  FILTER(?sitelinks >= $lo && ?sitelinks < $hi)
+  BIND(YEAR(?pubDate) AS ?pubYear)
+  BIND(YEAR(?birthDate) AS ?birthYear)
+  BIND(?pubYear - ?birthYear AS ?age)
+  FILTER(?age >= $AGE_MIN && ?age <= $AGE_MAX)
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "ja,en". }
+} LIMIT 2000
+"@
+  $r = Get-WDQS $q
+  if (-not $r.ok) { Write-Output "range $lo-$hi : FAILED"; continue }
+  $n = 0
+  foreach ($b in $r.data.results.bindings) {
+    $qid = Qid $b.work.value
+    $title = $b.workLabel.value
+    if ($title -match "^Q[0-9]+$") { continue }
+    $py = [int]$b.pubYear.value
+    $by = [int]$b.birthYear.value
+    $age = [int]$b.age.value
+    if (-not $cand.Contains($qid)) {
+      $cand[$qid] = @{ title=$title; author=$b.authorLabel.value; sl=[int]$b.sitelinks.value; py=$py; by=$by; age=$age }
+    } elseif ($py -lt $cand[$qid].py) {
+      # keep earliest publication (closest to writing)
+      $cand[$qid].py = $py; $cand[$qid].age = $age
+    }
+    $n++
+  }
+  Write-Output "range $lo-$hi : $n rows, total $($cand.Count)"
+  Start-Sleep -Seconds 1
+}
+Write-Output "STAGE1 DONE. candidates: $($cand.Count)"
+
+# ---- stage 2: types + ja article (batches of 120) ----
+$types = @{}; $articles = @{}
+$ids = @($cand.Keys)
+for ($i = 0; $i -lt $ids.Count; $i += 120) {
+  $batch = $ids[$i..([Math]::Min($i+119, $ids.Count-1))]
+  $values = ($batch | ForEach-Object { "wd:$_" }) -join " "
+  $q2 = @"
+SELECT ?work ?type ?jaArticle WHERE {
+  VALUES ?work { $values }
+  ?work wdt:P31 ?type .
+  OPTIONAL { ?a schema:about ?work ; schema:isPartOf <https://ja.wikipedia.org/> ; schema:name ?jaArticle . }
+}
+"@
+  $r2 = Get-WDQS $q2
+  if (-not $r2.ok) { Write-Output "type batch $i : FAILED"; continue }
+  foreach ($b in $r2.data.results.bindings) {
+    $qid = Qid $b.work.value
+    $t = Qid $b.type.value
+    if (-not $types.Contains($qid)) { $types[$qid] = @{} }
+    $types[$qid][$t] = $true
+    if ($b.jaArticle -and -not $articles.Contains($qid)) { $articles[$qid] = $b.jaArticle.value }
+  }
+  Write-Output "type batch $i done"
+  Start-Sleep -Seconds 1
+}
+Write-Output "STAGE2 DONE."
+
+# ---- filter literary + group by age ----
+$byAge = @{}
+foreach ($qid in $cand.Keys) {
+  $tset = $types[$qid]
+  if (-not $tset) { continue }
+  $den = $false; foreach ($t in $tset.Keys) { if ($deny.Contains($t)) { $den = $true; break } }
+  if ($den) { continue }
+  $lit = $false; foreach ($t in $tset.Keys) { if ($allow.Contains($t)) { $lit = $true; break } }
+  if (-not $lit) { continue }
+  $c = $cand[$qid]
+  $art = ""; if ($articles.Contains($qid)) { $art = $articles[$qid] }
+  $a = "$($c.age)"
+  if (-not $byAge.Contains($a)) { $byAge[$a] = @() }
+  $byAge[$a] += @{ t=$c.title; a=$c.author; y="$($c.py)"; by="$($c.by)"; art=$art; sl=$c.sl }
+}
+
+# ---- build ordered result: top PER_AGE per age, deduped by title+author ----
+$result = [ordered]@{}
+for ($age = $AGE_MIN; $age -le $AGE_MAX; $age++) {
+  $a = "$age"
+  if (-not $byAge.Contains($a)) { $result[$a] = @(); continue }
+  $sorted = $byAge[$a] | Sort-Object -Property @{Expression={[int]$_.sl}; Descending=$true}
+  $seen = @{}; $picked = @()
+  foreach ($bk in $sorted) {
+    $key = $bk.t + "|" + $bk.a
+    if ($seen.Contains($key)) { continue }
+    $seen[$key] = $true
+    $picked += [ordered]@{ t=$bk.t; a=$bk.a; y=$bk.y; by=$bk.by; art=$bk.art }
+    if ($picked.Count -ge $PER_AGE) { break }
+  }
+  $result[$a] = @($picked)
+}
+
+$json = $result | ConvertTo-Json -Depth 6 -Compress
+$text = "window.BOOKS_DATA = $json;`r`n"
+Set-Content -Path $OUT -Value $text -Encoding UTF8
+
+$withData = 0; foreach ($k in $result.Keys) { if ($result[$k].Count -gt 0) { $withData++ } }
+Write-Output "DONE. ages with data: $withData / $($result.Count). saved to books-data.js"

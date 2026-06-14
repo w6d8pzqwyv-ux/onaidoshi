@@ -116,6 +116,7 @@
 </div>
 
 <script src="quotes.js"></script>
+<script src="books-data.js"></script>
 <script>
 const birthEl  = document.getElementById('birth');
 const goEl     = document.getElementById('go');
@@ -149,6 +150,7 @@ const I18N = {
     born: (y) => `（${y}年生まれ）`,
     findBook: "この本を探す →",
     err: (m) => "エラー: " + m,
+    comingSoon: "（このページは日本語版です）",
     quoteBy: (person, age) => `— ${person}が<b>${age}歳</b>のとき`,
     amazon: "https://www.amazon.co.jp/s?k="
   },
@@ -175,6 +177,7 @@ const I18N = {
     born: (y) => `(b. ${y})`,
     findBook: "Find this book →",
     err: (m) => "Error: " + m,
+    comingSoon: "Book data for English is coming soon. The Japanese version is fully available now.",
     quoteBy: (person, age) => `— ${person}, at age <b>${age}</b>`,
     amazon: "https://www.amazon.com/s?k="
   }
@@ -298,16 +301,19 @@ async function run() {
   ageLine.innerHTML = T.ageLine(years, months);
   showQuote(years);
   goEl.disabled = true;
-  statusEl.textContent = T.searching;
   resultsEl.innerHTML = "";
+
+  // 他言語はまだ本データなし（日本語版のみ事前データあり）
+  if (LANG !== "ja") { statusEl.textContent = T.comingSoon; goEl.disabled = false; return; }
+
+  // 事前生成した本データ（books-data.js）を使う。リアルタイム検索はしないので一瞬で出る。
+  const raw = (typeof BOOKS_DATA !== "undefined" && BOOKS_DATA[years]) ? BOOKS_DATA[years] : [];
+  if (!raw.length) { statusEl.textContent = T.none(years); goEl.disabled = false; return; }
+
+  const books = raw.map(b => ({ title: b.t, author: b.a, year: b.y, birthYear: b.by, article: b.art }));
+  statusEl.textContent = T.loading(years, books.length);
   try {
-    const all = dedupe(await fetchBooks(years));
-    const books = all.slice(0, 20);
-    if (!books.length) {
-      statusEl.textContent = T.none(years);
-      return;
-    }
-    statusEl.textContent = T.loading(years, books.length);
+    // あらすじだけはWikipediaからその場で取得（1冊1リクエストで軽い）
     await Promise.all(books.map(async bk => { bk.summary = await fetchSummary(bk.article); }));
     statusEl.textContent = T.found(years, books.length);
     resultsEl.innerHTML = books.map(bk => `
