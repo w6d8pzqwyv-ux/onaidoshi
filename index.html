@@ -3,13 +3,40 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>同い年の名作 — あなたの歳、天才は何を書いたか</title>
-<meta name="description" content="生年月日を入力するだけ。あなたと同じ年齢のとき、世界の天才作家たちは何を書いていたか。名作の紹介と偉人の言葉を無料で表示。">
-<meta property="og:title" content="同い年の名作 — あなたの歳、天才は何を書いたか">
-<meta property="og:description" content="生年月日を入力するだけ。あなたと同じ年齢のとき、世界の天才作家たちは何を書いていたか。">
+<title>同い年の名作｜偉人は何歳で名作を書いたのか</title>
+<meta name="description" content="生年月日を入れるだけ。あなたと同い年のとき、世界の作家や偉人が何歳でどんな名作を書いたのかが分かります。夏目漱石・ドストエフスキーなど同い年の名作と、偉人の言葉を無料で表示。">
+<meta property="og:title" content="同い年の名作｜偉人は何歳で名作を書いたのか">
+<meta property="og:description" content="生年月日を入れるだけ。あなたと同い年のとき、作家や偉人が何歳でどんな名作を書いたのかが分かります。">
 <meta property="og:url" content="https://w6d8pzqwyv-ux.github.io/onaidoshi/">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://w6d8pzqwyv-ux.github.io/onaidoshi/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://w6d8pzqwyv-ux.github.io/onaidoshi/#website",
+      "url": "https://w6d8pzqwyv-ux.github.io/onaidoshi/",
+      "name": "同い年の名作",
+      "description": "生年月日を入れると、今のあなたと同い年のときに作家が書いた名作と、偉人の言葉が分かる無料サービス。",
+      "inLanguage": "ja"
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://w6d8pzqwyv-ux.github.io/onaidoshi/#org",
+      "name": "同い年の名作",
+      "url": "https://w6d8pzqwyv-ux.github.io/onaidoshi/"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "ホーム", "item": "https://w6d8pzqwyv-ux.github.io/onaidoshi/" }
+      ]
+    }
+  ]
+}
+</script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-1ZSQ9QJRHX"></script>
 <script>
@@ -93,6 +120,21 @@
   .about h2 { font-size: 19px; margin: 0 0 14px; letter-spacing: 0.03em; }
   .about p { font-size: 14.5px; color: var(--ink); opacity: 0.9; margin: 0 0 14px; }
   .note { text-align: center; font-size: 12px; color: var(--sub); margin-top: 40px; }
+  /* 感情導入（自分ごと化） */
+  .intro { text-align: center; margin: 4px 0 30px; }
+  .intro-age { font-size: 16px; color: var(--sub); margin: 0 0 12px; }
+  .intro-age b { color: var(--accent); font-size: 26px; }
+  .intro-main { font-size: 22px; line-height: 2.0; margin: 0; }
+  .intro-main .ia { color: var(--accent); font-weight: bold; }
+  .intro-main .it { font-weight: bold; }
+  /* SNSシェア */
+  .share { text-align: center; margin: 32px 0 8px; padding-top: 26px; border-top: 1px dashed var(--line); }
+  .share-label { font-size: 14px; color: var(--sub); margin: 0 0 14px; }
+  .share-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .sbtn { display: inline-block; font-size: 14px; padding: 11px 20px; border-radius: 9px; cursor: pointer; text-decoration: none; border: none; font-family: inherit; }
+  .sx { background: #000; color: #fff; }
+  .sline { background: #06c755; color: #fff; }
+  .scopy { background: var(--line); color: var(--ink); }
 </style>
 </head>
 <body>
@@ -109,9 +151,11 @@
     <div class="age-line" id="ageLine"></div>
   </div>
 
+  <div id="intro"></div>
   <div id="quote"></div>
   <div id="status" class="status"></div>
   <div id="results"></div>
+  <div id="share"></div>
 
   <section class="about" id="t-about">
     <h2>同い年の名作とは</h2>
@@ -133,6 +177,8 @@ const ageLine  = document.getElementById('ageLine');
 const quoteEl  = document.getElementById('quote');
 const statusEl = document.getElementById('status');
 const resultsEl= document.getElementById('results');
+const introEl  = document.getElementById('intro');
+const shareEl  = document.getElementById('share');
 
 // --- 多言語化（i18n）の土台。言語を増やすときはここに1ブロック足すだけ ---
 const I18N = {
@@ -311,6 +357,8 @@ async function run() {
   showQuote(years);
   goEl.disabled = true;
   resultsEl.innerHTML = "";
+  introEl.innerHTML = "";
+  shareEl.innerHTML = "";
 
   // 他言語はまだ本データなし（日本語版のみ事前データあり）
   if (LANG !== "ja") { statusEl.textContent = T.comingSoon; goEl.disabled = false; return; }
@@ -326,6 +374,27 @@ async function run() {
     [books[i], books[j]] = [books[j], books[i]];
   }
   const shown = books.slice(0, 8);
+
+  // 「自分ごと化」：主役の1冊で大きな導入文を出す（主役はユーザー）
+  const hero = shown[0];
+  introEl.innerHTML = `
+    <p class="intro-age">あなたは今 <b>${years}</b> 歳。</p>
+    <p class="intro-main"><span class="ia">${hero.author}</span> は ${years}歳のとき<br>『<span class="it">${hero.title}</span>』<br>を書きました。</p>`;
+
+  // SNSシェア（X・LINE・コピー）
+  const shareText = `私と同い年の時、${hero.author}は『${hero.title}』を書いていた。\n#同い年の名作`;
+  const shareUrl = "https://w6d8pzqwyv-ux.github.io/onaidoshi/";
+  window.__copyText = shareText + "\n" + shareUrl;
+  const xUrl = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareText) + "&url=" + encodeURIComponent(shareUrl);
+  const lineUrl = "https://social-plugins.line.me/lineit/share?url=" + encodeURIComponent(shareUrl) + "&text=" + encodeURIComponent(shareText);
+  shareEl.innerHTML = `
+    <p class="share-label">この結果をシェアする</p>
+    <div class="share-btns">
+      <a class="sbtn sx" href="${xUrl}" target="_blank" rel="noopener">Xでシェア</a>
+      <a class="sbtn sline" href="${lineUrl}" target="_blank" rel="noopener">LINEで送る</a>
+      <button type="button" class="sbtn scopy" onclick="navigator.clipboard.writeText(window.__copyText).then(()=>{this.textContent='コピーしました ✓';})">コピー</button>
+    </div>`;
+
   statusEl.textContent = T.loading(years, shown.length);
   try {
     // あらすじだけはWikipediaからその場で取得（1冊1リクエストで軽い）
