@@ -30,6 +30,10 @@ $allow = @{}
 # types to exclude (manga, game, comic, anime, document, scientific article)
 $deny = @{}
 "Q8274","Q7889","Q1004","Q838795","Q1760610","Q1107","Q21198342","Q1233720","Q11424","Q13442814","Q49757","Q1153574" | ForEach-Object { $deny[$_] = $true }
+# exclude specific works by QID (hate/propaganda - never list with a buy link)
+# Mein Kampf (all editions), Protocols of the Elders of Zion, Quotations from Chairman Mao / Little Red Book
+$excludeQid = @{}
+"Q48244","Q1323886","Q1669919","Q1678947","Q17124728","Q125020971","Q139876069","Q26193","Q36393","Q105095422","Q123244145" | ForEach-Object { $excludeQid[$_] = $true }
 
 $AGE_MIN = 15
 $AGE_MAX = 75
@@ -71,6 +75,7 @@ SELECT ?work ?workLabel ?authorLabel ?pubYear ?birthYear ?age ?sitelinks WHERE {
     $qid = Qid $b.work.value
     $title = $b.workLabel.value
     if ($title -match "^Q[0-9]+$") { continue }
+    if ($excludeQid.Contains($qid)) { continue }
     $py = [int]$b.pubYear.value
     $by = [int]$b.birthYear.value
     $age = [int]$b.age.value
