@@ -132,6 +132,19 @@
   .scopy { background: var(--line); color: var(--ink); }
   .langbar { text-align: center; margin-bottom: 18px; font-size: 13px; }
   .langbar a { color: var(--sub); }
+  .quotebox {
+    background: #fbf3e9;
+    border: 1px solid #ecdcc6;
+    border-left: 4px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: 28px;
+  }
+  .quotebox .qtext { font-size: 18px; margin: 0 0 10px; line-height: 1.8; }
+  .quotebox .qby { font-size: 14px; color: var(--ink); margin: 0; }
+  .quotebox .qby b { color: var(--accent); }
+  .quotebox .qmean { font-size: 14px; color: var(--ink); opacity: 0.85; margin: 8px 0 0; line-height: 1.7; }
+  .quotebox .qsrc { font-size: 12px; color: var(--sub); margin: 4px 0 0; }
 </style>
 </head>
 <body>
@@ -150,6 +163,7 @@
   </div>
 
   <div id="intro"></div>
+  <div id="quote"></div>
   <div id="status" class="status"></div>
   <div id="results"></div>
   <div id="share"></div>
@@ -165,6 +179,7 @@
   <p style="text-align:center; margin-top:16px; font-size:13px;"><a href="../privacy.html" style="color:var(--sub);">Política de Privacidade</a></p>
 </div>
 
+<script src="../quotes-pt.js?v=1"></script>
 <script src="../books-data-pt.js?v=1"></script>
 <script>
 const birthEl  = document.getElementById('birth');
@@ -173,6 +188,7 @@ const ageLine  = document.getElementById('ageLine');
 const statusEl = document.getElementById('status');
 const resultsEl= document.getElementById('results');
 const introEl  = document.getElementById('intro');
+const quoteEl  = document.getElementById('quote');
 const shareEl  = document.getElementById('share');
 
 const T = {
@@ -182,6 +198,7 @@ const T = {
   loading: (y, n) => `${n} obras escritas aos ${y} anos (carregando resumos…)`,
   found: (y, n) => `${n} obras escritas aos ${y} anos`,
   ageNote: "* A idade é uma estimativa (ano de publicação − ano de nascimento do autor) e pode diferir de quando a obra foi realmente escrita.",
+  quoteBy: (person, age) => `— ${person}, aos <b>${age}</b> anos`,
   pubYear: (y) => `(${y})`,
   born: (y) => `(n. ${y})`,
   findBook: "Encontrar este livro →",
@@ -194,6 +211,20 @@ const T = {
   copied: "Copiado ✓",
   amazon: "https://www.amazon.com/s?k="
 };
+
+function showQuote(years) {
+  if (typeof QUOTES_PT === "undefined" || !QUOTES_PT.length) { quoteEl.innerHTML = ""; return; }
+  const sorted = [...QUOTES_PT].sort((a, b) => Math.abs(a.age - years) - Math.abs(b.age - years));
+  const pool = sorted.slice(0, 5);
+  const best = pool[Math.floor(Math.random() * pool.length)];
+  quoteEl.innerHTML = `
+    <div class="quotebox">
+      <p class="qtext">“${best.quote}”</p>
+      <p class="qby">${T.quoteBy(best.person, best.age)}</p>
+      ${best.meaning ? `<p class="qmean">${best.meaning}</p>` : ""}
+      <p class="qsrc">${best.source}</p>
+    </div>`;
+}
 
 function calcAge(birthStr) {
   const b = new Date(birthStr);
@@ -221,7 +252,8 @@ async function run() {
   const { years, months } = calcAge(birthEl.value);
   ageLine.innerHTML = T.ageLine(years, months);
   goEl.disabled = true;
-  resultsEl.innerHTML = ""; introEl.innerHTML = ""; shareEl.innerHTML = "";
+  resultsEl.innerHTML = ""; introEl.innerHTML = ""; shareEl.innerHTML = ""; quoteEl.innerHTML = "";
+  showQuote(years);
 
   const raw = (typeof BOOKS_DATA_PT !== "undefined" && BOOKS_DATA_PT[years]) ? BOOKS_DATA_PT[years] : [];
   if (!raw.length) { statusEl.textContent = T.none(years); goEl.disabled = false; return; }
