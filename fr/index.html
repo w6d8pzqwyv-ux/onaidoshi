@@ -132,6 +132,13 @@
   .scopy { background: var(--line); color: var(--ink); }
   .langbar { text-align: center; margin-bottom: 18px; font-size: 13px; }
   .langbar a { color: var(--sub); }
+  .recobox { background: #f3f0fa; border: 1px solid #e2dcef; border-left: 4px solid var(--accent); border-radius: 12px; padding: 18px 20px; margin: 28px 0; }
+  .recobox .reco-h { font-size: 13px; color: var(--sub); margin: 0 0 10px; letter-spacing: 0.02em; }
+  .recobox .reco-t { font-size: 18px; font-weight: bold; margin: 0 0 4px; }
+  .recobox .reco-a { font-size: 14px; color: var(--ink); margin: 0 0 8px; }
+  .recobox .reco-proof { color: var(--accent); }
+  .recobox .reco-age { font-size: 13px; color: var(--sub); margin: 0 0 12px; }
+  .recobox .reco-cta { display: inline-block; font-size: 14px; color: #fff; background: var(--accent); padding: 8px 16px; border-radius: 8px; text-decoration: none; }
   .quotebox {
     background: #fbf3e9;
     border: 1px solid #ecdcc6;
@@ -167,6 +174,7 @@
   <div id="status" class="status"></div>
   <div id="results"></div>
   <div id="share"></div>
+  <div id="reco"></div>
 
   <section class="about">
     <h2>À propos de Chefs-d'œuvre de Votre Âge</h2>
@@ -183,6 +191,8 @@
 <script src="../featured-books.js?v=1"></script>
 <script src="../quotes-fr.js?v=1"></script>
 <script src="../books-data-fr.js?v=1"></script>
+<script src="../recommend.js?v=1"></script>
+<script>window.renderRecommend && window.renderRecommend("fr", "reco");</script>
 <script>
 const birthEl  = document.getElementById('birth');
 const goEl     = document.getElementById('go');
