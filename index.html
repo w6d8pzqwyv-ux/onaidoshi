@@ -444,7 +444,7 @@ async function run() {
         <p class="title">${bk.title}${bk.year ? `<span class="pubyear">${T.pubYear(bk.year)}</span>` : ""}</p>
         <p class="meta">${bk.author}${bk.birthYear ? T.born(bk.birthYear) : ""}</p>
         ${bk.summary ? `<p class="summary">${bk.summary}</p>` : ""}
-        <a href="${T.amazon}${encodeURIComponent(bk.title)}" target="_blank" rel="noopener">${T.findBook}</a>${T.rakuten ? ` <a href="${T.rakuten(bk.title)}" target="_blank" rel="noopener">${T.findRakuten}</a>` : ""}
+        <a href="${T.amazon}${encodeURIComponent(bk.title + " " + bk.author)}" target="_blank" rel="noopener">${T.findBook}</a>${T.rakuten ? ` <a href="${T.rakuten(bk.title + " " + bk.author)}" target="_blank" rel="noopener">${T.findRakuten}</a>` : ""}
       </div>`).join("");
   } catch (e) {
     statusEl.textContent = T.err(e.message);
