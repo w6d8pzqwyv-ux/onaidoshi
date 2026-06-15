@@ -180,6 +180,7 @@
   <p style="text-align:center; margin-top:16px; font-size:13px;"><a href="../privacy.html" style="color:var(--sub);">Política de privacidad</a></p>
 </div>
 
+<script src="../featured-books.js?v=1"></script>
 <script src="../quotes-es.js?v=1"></script>
 <script src="../books-data-es.js?v=1"></script>
 <script>
@@ -264,7 +265,12 @@ async function run() {
     const j = Math.floor(Math.random() * (i + 1));
     [books[i], books[j]] = [books[j], books[i]];
   }
-  const shown = books.slice(0, 8);
+  // 「買える本」(featured) があれば結果の上位に寄せる
+  const fset = (window.FEATURED && window.FEATURED["es"]) ? new Set(window.FEATURED["es"]) : null;
+  const ordered = fset
+    ? books.filter(b => fset.has(b.title + "|" + b.author)).concat(books.filter(b => !fset.has(b.title + "|" + b.author)))
+    : books;
+  const shown = ordered.slice(0, 8);
 
   const hero = shown[0];
   introEl.innerHTML = `<p class="intro-main">${T.introLine(hero.author, hero.title, years)}</p>`;
