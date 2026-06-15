@@ -267,9 +267,9 @@ async function run() {
   }
   // 「買える本」(featured) があれば結果の上位に寄せる
   const fset = (window.FEATURED && window.FEATURED["pt"]) ? new Set(window.FEATURED["pt"]) : null;
-  const ordered = fset
-    ? books.filter(b => fset.has(b.title + "|" + b.author)).concat(books.filter(b => !fset.has(b.title + "|" + b.author)))
-    : books;
+  const isF = b => fset && fset.has(b.title + "|" + b.author);
+  const feat = books.filter(isF).sort((a, b) => (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0));
+  const ordered = fset ? feat.concat(books.filter(b => !isF(b))) : books;
   const shown = ordered.slice(0, 8);
 
   const hero = shown[0];
