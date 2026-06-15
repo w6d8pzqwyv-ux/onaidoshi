@@ -181,6 +181,7 @@ const T = {
   none: (y) => `Nenhuma obra encontrada para a idade ${y} (tente outra idade).`,
   loading: (y, n) => `${n} obras escritas aos ${y} anos (carregando resumos…)`,
   found: (y, n) => `${n} obras escritas aos ${y} anos`,
+  ageNote: "* A idade é uma estimativa (ano de publicação − ano de nascimento do autor) e pode diferir de quando a obra foi realmente escrita.",
   pubYear: (y) => `(${y})`,
   born: (y) => `(n. ${y})`,
   findBook: "Encontrar este livro →",
@@ -256,7 +257,7 @@ async function run() {
         <p class="meta">${bk.author}${bk.birthYear ? T.born(bk.birthYear) : ""}</p>
         ${bk.summary ? `<p class="summary">${bk.summary}</p>` : ""}
         <a href="${T.amazon}${encodeURIComponent(bk.title + " " + bk.author)}&tag=onaidoshi20-20" target="_blank" rel="noopener">${T.findBook}</a>
-      </div>`).join("");
+      </div>`).join("") + (T.ageNote ? `<p style="text-align:center; font-size:12px; color:var(--sub); margin-top:8px;">${T.ageNote}</p>` : "");
   } catch (e) {
     statusEl.textContent = T.err(e.message);
   } finally {

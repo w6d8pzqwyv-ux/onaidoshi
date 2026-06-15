@@ -219,6 +219,7 @@ const I18N = {
     none: (y) => `${y}歳の名作データが見つかりませんでした（年齢を変えて試してみてください）`,
     loading: (y, n) => `${y}歳のときに書かれた名作 ${n}冊（内容を読み込み中…）`,
     found: (y, n) => `${y}歳のときに書かれた名作 ${n}冊`,
+    ageNote: "※ 年齢は「出版年−作者の生まれ年」の概算です。執筆時期とずれる場合があります。",
     pubYear: (y) => `（${y}年）`,
     born: (y) => `（${y}年生まれ）`,
     findBook: "Amazonで探す →",
@@ -257,6 +258,7 @@ const I18N = {
     none: (y) => `No masterpiece data found for age ${y} (try a different age).`,
     loading: (y, n) => `${n} masterpieces written at age ${y} (loading summaries…)`,
     found: (y, n) => `${n} masterpieces written at age ${y}`,
+    ageNote: "* Age is an estimate (publication year − author's birth year) and may differ from when the work was actually written.",
     pubYear: (y) => `(${y})`,
     born: (y) => `(b. ${y})`,
     findBook: "Find this book →",
@@ -445,7 +447,7 @@ async function run() {
         <p class="meta">${bk.author}${bk.birthYear ? T.born(bk.birthYear) : ""}</p>
         ${bk.summary ? `<p class="summary">${bk.summary}</p>` : ""}
         <a href="${T.amazon}${encodeURIComponent(bk.title + " " + bk.author)}" target="_blank" rel="noopener">${T.findBook}</a>${T.rakuten ? ` <a href="${T.rakuten(bk.title + " " + bk.author)}" target="_blank" rel="noopener">${T.findRakuten}</a>` : ""}
-      </div>`).join("");
+      </div>`).join("") + (T.ageNote ? `<p style="text-align:center; font-size:12px; color:var(--sub); margin-top:8px;">${T.ageNote}</p>` : "");
   } catch (e) {
     statusEl.textContent = T.err(e.message);
   } finally {
