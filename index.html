@@ -331,43 +331,6 @@ function calcAge(birthStr) {
   return { years, months };
 }
 
-async function fetchBooks(age) {
-  const query = `
-    SELECT ?workLabel ?authorLabel ?pubYear ?birthYear ?sitelinks ?jaArticle WHERE {
-      ?work wdt:P50 ?author .
-      ?work wdt:P577 ?pubDate .
-      ?work wdt:P31/wdt:P279* wd:Q7725634 .
-      ?work wikibase:sitelinks ?sitelinks .
-      ?author wdt:P569 ?birthDate .
-      BIND(YEAR(?pubDate) AS ?pubYear)
-      BIND(YEAR(?birthDate) AS ?birthYear)
-      FILTER(?pubYear - ?birthYear = ${age})
-      FILTER(?sitelinks >= 12)
-      # マンガ・ライトノベルを除外（軽量版：直接の種類だけ判定）
-      FILTER NOT EXISTS { ?work wdt:P31 wd:Q8274 }
-      FILTER NOT EXISTS { ?work wdt:P31 wd:Q1233720 }
-      FILTER NOT EXISTS { ?work wdt:P31 wd:Q21198342 }
-      OPTIONAL {
-        ?article schema:about ?work ;
-                 schema:isPartOf <https://${WIKI}.wikipedia.org/> ;
-                 schema:name ?jaArticle .
-      }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "${LANG},en". }
-    } ORDER BY DESC(?sitelinks) LIMIT 40`;
-  const url = "https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(query);
-  const res = await fetch(url, { headers: { "Accept": "application/sparql-results+json" } });
-  if (!res.ok) throw new Error("通信に失敗しました (" + res.status + ")");
-  const data = await res.json();
-  return data.results.bindings.map(b => ({
-    title: b.workLabel?.value || "（無題）",
-    author: b.authorLabel?.value || "（作者不明）",
-    year: b.pubYear?.value || "",
-    birthYear: b.birthYear?.value || "",
-    article: b.jaArticle?.value || "",
-    fame: parseInt(b.sitelinks?.value || "0", 10)
-  }));
-}
-
 async function fetchSummary(article) {
   if (!article) return "";
   try {
