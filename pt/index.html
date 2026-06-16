@@ -152,6 +152,10 @@
   .quotebox .qby b { color: var(--accent); }
   .quotebox .qmean { font-size: 14px; color: var(--ink); opacity: 0.85; margin: 8px 0 0; line-height: 1.7; }
   .quotebox .qsrc { font-size: 12px; color: var(--sub); margin: 4px 0 0; }
+  @media (max-width: 480px) {
+    input[type="date"] { display: block; width: 100%; }
+    button { display: block; width: 100%; margin-left: 0; margin-top: 12px; padding: 14px 22px; }
+  }
 </style>
 </head>
 <body>
@@ -165,7 +169,7 @@
   <div class="panel">
     <label for="birth">Insira sua data de nascimento</label>
     <input type="date" id="birth" value="1986-01-01">
-    <button id="go">Ver</button>
+    <button id="go">Ver obras da minha idade</button>
     <div class="age-line" id="ageLine"></div>
   </div>
 
@@ -315,6 +319,7 @@ async function run() {
 }
 
 goEl.addEventListener('click', run);
+run(); // ページを開いた時点でお手本を1回表示
 </script>
 </body>
 </html>
