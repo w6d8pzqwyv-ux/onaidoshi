@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://w6d8pzqwyv-ux.github.io/onaidoshi/sitemap.xml
+Sitemap: https://w6d8pzqwyv-ux.github.io/onaidoshi/sitemap-age.xml
