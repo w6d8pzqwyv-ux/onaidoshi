@@ -101,6 +101,9 @@
     font-family: inherit;
   }
   button:disabled { opacity: 0.5; cursor: default; }
+  button { box-shadow: 0 2px 8px rgba(179,84,30,0.25); transition: background .15s, transform .05s; }
+  button:hover { background: #9c4818; }
+  button:active { transform: translateY(1px); }
   .age-line { margin-top: 18px; font-size: 18px; }
   .age-line b { color: var(--accent); font-size: 22px; }
   .status { text-align: center; color: var(--sub); margin: 24px 0; }
