@@ -158,6 +158,11 @@
   .recobox .reco-proof { color: var(--accent); }
   .recobox .reco-age { font-size: 13px; color: var(--sub); margin: 0 0 12px; }
   .recobox .reco-cta { display: inline-block; font-size: 14px; color: #fff; background: var(--accent); padding: 8px 16px; border-radius: 8px; text-decoration: none; }
+  /* スマホ（幅480px以下）では入力欄とボタンを縦に並べ、押しやすく幅いっぱいに */
+  @media (max-width: 480px) {
+    input[type="date"] { display: block; width: 100%; }
+    button { display: block; width: 100%; margin-left: 0; margin-top: 12px; padding: 14px 22px; }
+  }
 </style>
 </head>
 <body>
@@ -217,7 +222,7 @@ const I18N = {
     h1: "同い年の名作",
     lead: "あなたと同じ歳のとき、天才たちは何を書いていたか。",
     label: "生年月日を入れてください",
-    btn: "見る",
+    btn: "同い年の名作を見る",
     aboutH2: "同い年の名作とは",
     aboutP: [
       "「同い年の名作」は、あなたの生年月日を入れるだけで、<strong>今のあなたと同じ年齢のときに、世界の作家たちが書いた名作</strong>を一覧できる無料サービスです。夏目漱石、ドストエフスキー、ヘミングウェイ——天才たちが何歳でどの作品を生み出したのかが、作品の紹介つきでわかります。",
@@ -431,6 +436,7 @@ async function run() {
 }
 
 goEl.addEventListener('click', run);
+run(); // ページを開いた時点でお手本を1回表示（初期値の生年月日で実演）
 </script>
 </body>
 </html>
