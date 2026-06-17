@@ -161,6 +161,16 @@
   .recobox .reco-proof { color: var(--accent); }
   .recobox .reco-age { font-size: 13px; color: var(--sub); margin: 0 0 12px; }
   .recobox .reco-cta { display: inline-block; font-size: 14px; color: #fff; background: var(--accent); padding: 8px 16px; border-radius: 8px; text-decoration: none; }
+  /* ステップアップ：内省と目標 */
+  .aspirebox { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 26px 22px; margin: 34px 0; text-align: center; }
+  .aspirebox .asp-prev { font-size: 13px; color: var(--ink); background: #fbf3e9; border: 1px solid #ecdcc6; border-radius: 9px; padding: 9px 13px; margin: 0 0 18px; line-height: 1.6; }
+  .aspirebox .asp-prev b { color: var(--accent); }
+  .aspirebox .asp-prompt { font-size: 14px; color: var(--sub); margin: 0 0 6px; }
+  .aspirebox .asp-q { font-size: 21px; font-weight: bold; margin: 0 0 8px; line-height: 1.6; }
+  .aspirebox .asp-reassure { font-size: 13.5px; color: var(--sub); margin: 0 0 18px; }
+  .aspirebox .asp-input { width: 100%; max-width: 420px; font-size: 16px; font-family: inherit; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+  .aspirebox .asp-save { display: block; margin: 14px auto 0; }
+  .aspirebox .asp-done { font-size: 14px; color: var(--accent); margin: 12px 0 0; min-height: 1px; }
   /* スマホ（幅480px以下）では入力欄とボタンを縦に並べ、押しやすく幅いっぱいに */
   @media (max-width: 480px) {
     input[type="date"] { display: block; width: 100%; }
@@ -187,6 +197,7 @@
   <div id="quote"></div>
   <div id="status" class="status"></div>
   <div id="results"></div>
+  <div id="aspire"></div>
   <div id="share"></div>
   <div id="reco"></div>
 
@@ -217,6 +228,7 @@ const statusEl = document.getElementById('status');
 const resultsEl= document.getElementById('results');
 const introEl  = document.getElementById('intro');
 const shareEl  = document.getElementById('share');
+const aspireEl = document.getElementById('aspire');
 
 // --- 多言語化（i18n）の土台。言語を増やすときはここに1ブロック足すだけ ---
 const I18N = {
@@ -257,7 +269,14 @@ const I18N = {
     shareX: "Xでシェア",
     shareLine: "LINEで送る",
     shareCopy: "コピー",
-    copied: "コピーしました ✓"
+    copied: "コピーしました ✓",
+    aspirePrompt: "彼らはこの歳で、これを残した。",
+    aspireQ: "あなたは、これから何を残したい？",
+    aspireReassure: "焦らなくていい。多くの名作家も、遅咲きだった。",
+    aspirePlaceholder: "例：いつか自分の物語を書く",
+    aspireSave: "この目標を残す",
+    aspireSaved: "保存しました ✓（このブラウザに記録され、次に来たとき表示されます）",
+    aspirePrev: (date) => `前回のあなたの目標（${date}）：`
   },
   en: {
     htmlLang: "en",
@@ -294,7 +313,14 @@ const I18N = {
     shareX: "Share on X",
     shareLine: "LINE",
     shareCopy: "Copy",
-    copied: "Copied ✓"
+    copied: "Copied ✓",
+    aspirePrompt: "They left this behind at this age.",
+    aspireQ: "What do you want to leave behind?",
+    aspireReassure: "No rush — many of the greats were late bloomers, too.",
+    aspirePlaceholder: "e.g. Someday, write my own story",
+    aspireSave: "Save this goal",
+    aspireSaved: "Saved ✓ (kept in this browser, shown when you return)",
+    aspirePrev: (date) => `Your goal from last time (${date}): `
   }
 };
 
@@ -339,6 +365,41 @@ function showQuote(years) {
       ${best.meaning ? `<p class="qmean">${best.meaning}</p>` : ""}
       <p class="qsrc">${best.source}</p>
     </div>`;
+}
+
+// 入力されたテキストを安全に表示するためのエスケープ
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+}
+
+// ステップアップ：感動 → 内省（何を残したい？）→ 目標を保存（次回表示）
+const GOAL_KEY = "onaidoshi_goal";
+function renderAspire() {
+  if (!T.aspireQ) { aspireEl.innerHTML = ""; return; } // 未対応言語ではスキップ
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(GOAL_KEY) || "null"); } catch (e) {}
+  const prevHtml = (saved && saved.text)
+    ? `<p class="asp-prev">${T.aspirePrev(saved.date)}<b>${escapeHtml(saved.text)}</b></p>`
+    : "";
+  aspireEl.innerHTML = `
+    <div class="aspirebox">
+      ${prevHtml}
+      <p class="asp-prompt">${T.aspirePrompt}</p>
+      <p class="asp-q">${T.aspireQ}</p>
+      <p class="asp-reassure">${T.aspireReassure}</p>
+      <input type="text" class="asp-input" id="aspInput" maxlength="80" placeholder="${T.aspirePlaceholder}">
+      <button type="button" class="asp-save" id="aspSave">${T.aspireSave}</button>
+      <p class="asp-done" id="aspDone"></p>
+    </div>`;
+  const inp = document.getElementById("aspInput");
+  if (saved && saved.text) inp.value = saved.text; // 前回の目標を初期表示
+  document.getElementById("aspSave").addEventListener("click", () => {
+    const text = inp.value.trim();
+    if (!text) return;
+    const date = new Date().toLocaleDateString(LANG === "ja" ? "ja-JP" : "en-US");
+    localStorage.setItem(GOAL_KEY, JSON.stringify({ text, date }));
+    document.getElementById("aspDone").textContent = T.aspireSaved;
+  });
 }
 
 function calcAge(birthStr) {
@@ -418,6 +479,8 @@ async function run() {
       <a class="sbtn sline" href="${lineUrl}" target="_blank" rel="noopener">${T.shareLine}</a>
       <button type="button" class="sbtn scopy" onclick="navigator.clipboard.writeText(window.__copyText).then(()=>{this.textContent='${T.copied}';})">${T.shareCopy}</button>
     </div>`;
+
+  renderAspire(); // 「あなたは何を残したい？」の内省＋目標保存
 
   statusEl.textContent = T.loading(years, shown.length);
   try {
